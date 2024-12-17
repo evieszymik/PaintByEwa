@@ -47,9 +47,7 @@ namespace PaintByEwa
         int valueBlue;
         System.Windows.Media.Color currentColor = System.Windows.Media.Color.FromRgb(0, 0, 0);
 
-        bool imageAdded = false;
-        private Mat originalImage;
-        private Mat processedImage;
+        bool imageAdded = false;      
 
         public MainWindow()
         {
@@ -493,16 +491,9 @@ namespace PaintByEwa
                 {
                     imagePath = openFileDialog.FileName;
                     Uri fileUri = new Uri(imagePath);
-                    BitmapImage bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = fileUri;
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
+                    BitmapImage bitmap = new BitmapImage(fileUri);                  
                     orgImg.Source = bitmap;
-                    imageAdded = true;
-
-                    originalImage = CvInvoke.Imread(imagePath, ImreadModes.Color);
-                    
+                    imageAdded = true;                                    
                 }
                 catch (Exception)
                 {
