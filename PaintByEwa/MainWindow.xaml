@@ -8,10 +8,11 @@
         Title="PaintByEwa" Height="450" Width="800">
     <Grid>
         <Canvas x:Name="paintSurface" Background="LightBlue" Opacity="1" MouseMove="paintSurface_MouseMove" MouseLeftButtonDown="paintSurface_MouseLeftButtonDown" MouseDown="paintSurface_MouseDown">
+            <Image x:Name="orgImg" Width="800" Height="400" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,35,0,0" />
         </Canvas>
 
         <ToolBarPanel Margin="-5,-1,-5,0">
-            <ToolBar VerticalAlignment="Top" Background="#FF40E093" BorderBrush="#FF0C2380" BorderThickness="2">
+            <ToolBar VerticalAlignment="Top" Background="#FF40E093" BorderBrush="#FF0C2380" BorderThickness="2" Margin="-2,0,0,0">
                 <Button x:Name="buttonDraw" Click="buttonDraw_Click">Linia</Button>
                 <Button x:Name="buttonPoints" Click="buttonPoints_Click">Punkty</Button>
                 <Menu>
@@ -34,6 +35,13 @@
                     </MenuItem>
                 </Menu>
                 <Rectangle x:Name="buttonColorPicker" Width="20" Height="20" Stroke="Black" Fill="Black" Margin="6,0,0,0"  MouseLeftButtonDown="buttonColorPicker_MouseLeftButtonDown" />
+                
+                <Menu Margin="5,0,0,0">
+                    <MenuItem Header="Obraz" Background="#FF40E093" BorderBrush="#FF40E093">
+                        <MenuItem x:Name="readImage"  Header="Wczytaj" Background="#FF40E093" Click="readImage_Click"></MenuItem>
+                        <MenuItem x:Name="sobel"  Header="Filtr Sobel" Background="#FF40E093" Click="sobel_Click"></MenuItem>
+                    </MenuItem>
+                </Menu>
             </ToolBar>
         </ToolBarPanel>
 

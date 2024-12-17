@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +15,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
+using Emgu.CV;
+using Emgu.CV.CvEnum;
+using Emgu.CV.Features2D;
+using Emgu.CV.Reg;
+using Emgu.CV.Structure;
+using Microsoft.Win32;
+
 
 namespace PaintByEwa
 {
@@ -21,19 +32,24 @@ namespace PaintByEwa
     public partial class MainWindow : Window
     {
         int drawStyle = 1;
-        Point? currentPoint = new Point();
-        Point? startPoint = new Point();
+        System.Windows.Point? currentPoint = new System.Windows.Point();
+        System.Windows.Point? startPoint = new System.Windows.Point();
         bool first = true;
         bool firstPoint = true;
         Line selected;
-        Ellipse start;
-        Ellipse end;
+        System.Windows.Shapes.Ellipse start;
+        System.Windows.Shapes.Ellipse end;
+        string imagePath;
         
 
         int valueRed;
         int valueGreen;
         int valueBlue;
-        Color currentColor = Color.FromRgb(0, 0, 0);
+        System.Windows.Media.Color currentColor = System.Windows.Media.Color.FromRgb(0, 0, 0);
+
+        bool imageAdded = false;
+        private Mat originalImage;
+        private Mat processedImage;
 
         public MainWindow()
         {
@@ -43,21 +59,21 @@ namespace PaintByEwa
         public void setValueRed(int val)
         {
             valueRed = val;          
-            currentColor = Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue); 
+            currentColor = System.Windows.Media.Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue); 
             buttonColorPicker.Fill = new SolidColorBrush(currentColor);
         }
 
         public void setValueGreen(int val)
         {
             valueGreen = val;
-            currentColor = Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue);       
+            currentColor = System.Windows.Media.Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue);       
             buttonColorPicker.Fill = new SolidColorBrush(currentColor);
         }
 
         public void setValueBlue(int val)
         {
             valueBlue = val;
-            currentColor = Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue);
+            currentColor = System.Windows.Media.Color.FromRgb((byte)valueRed, (byte)valueGreen, (byte)valueBlue);
             buttonColorPicker.Fill = new SolidColorBrush(currentColor);
         }
 
@@ -151,13 +167,13 @@ namespace PaintByEwa
             double mouseX;
             double mouseY;
             double polySize;
-            Point p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12;
+            System.Windows.Point p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12;
            
 
             switch (drawStyle)
             {
                 case 2:
-                    Ellipse ellipse = new Ellipse();
+                    System.Windows.Shapes.Ellipse ellipse = new System.Windows.Shapes.Ellipse();
                     ellipse.Width = 6;
                     ellipse.Height = 6;
 
@@ -175,7 +191,7 @@ namespace PaintByEwa
                     }
                     else
                     {
-                        Point currentMousePosition = e.GetPosition(this);
+                        System.Windows.Point currentMousePosition = e.GetPosition(this);
                         startPoint = currentPoint;
 
                         Line line = new Line
@@ -191,16 +207,16 @@ namespace PaintByEwa
                         firstPoint = true;
                     }
                     break;
-                case 4:                 
-                     Point clickPoint = e.GetPosition(paintSurface);
+                case 4:
+                    System.Windows.Point clickPoint = e.GetPosition(paintSurface);
                      HitTestResult result = VisualTreeHelper.HitTest(paintSurface, clickPoint);
                         
 
                       if (result != null && result.VisualHit is Line l)
                       {
                           selected = l;
-                          start = new Ellipse();
-                          end = new Ellipse();
+                          start = new System.Windows.Shapes.Ellipse();
+                          end = new System.Windows.Shapes.Ellipse();
                           start.Width = start.Height = end.Width = end.Height = 6;
 
                           Canvas.SetTop(start, l.Y1 - start.Height / 2);
@@ -220,7 +236,7 @@ namespace PaintByEwa
                    
                     break;
                 case 5:
-                    Ellipse ell = new Ellipse();
+                    System.Windows.Shapes.Ellipse ell = new System.Windows.Shapes.Ellipse();
                     ell.Width = 60;
                     ell.Height = 40;
                     Canvas.SetTop(ell, e.GetPosition(this).Y - ell.Height / 2);
@@ -229,7 +245,7 @@ namespace PaintByEwa
                     paintSurface.Children.Add(ell);
                     break;
                 case 6:
-                    Ellipse el = new Ellipse();
+                    System.Windows.Shapes.Ellipse el = new System.Windows.Shapes.Ellipse();
                     el.Width = 40;
                     el.Height = 40;
                     Canvas.SetTop(el, e.GetPosition(this).Y - el.Height / 2);
@@ -238,7 +254,7 @@ namespace PaintByEwa
                     paintSurface.Children.Add(el);
                     break;
                 case 7:
-                    Rectangle rect = new Rectangle();
+                    System.Windows.Shapes.Rectangle rect = new System.Windows.Shapes.Rectangle();
                     rect.Width = 40;
                     rect.Height = 40;
                     Canvas.SetTop(rect, e.GetPosition(this).Y - rect.Height / 2);
@@ -254,14 +270,14 @@ namespace PaintByEwa
 
                     polySize = 15;
 
-                    p1 = new Point(mouseX - polySize, mouseY + 2 * polySize);
-                    p2 = new Point(mouseX + polySize, mouseY + 2 * polySize);
-                    p3 = new Point(mouseX + 2 * polySize, mouseY);
-                    p4 = new Point(mouseX + polySize, mouseY - 2 * polySize);
-                    p5 = new Point(mouseX - polySize, mouseY - 2 * polySize);
-                    p6 = new Point(mouseX - 2 * polySize, mouseY);
+                    p1 = new System.Windows.Point(mouseX - polySize, mouseY + 2 * polySize);
+                    p2 = new System.Windows.Point(mouseX + polySize, mouseY + 2 * polySize);
+                    p3 = new System.Windows.Point(mouseX + 2 * polySize, mouseY);
+                    p4 = new System.Windows.Point(mouseX + polySize, mouseY - 2 * polySize);
+                    p5 = new System.Windows.Point(mouseX - polySize, mouseY - 2 * polySize);
+                    p6 = new System.Windows.Point(mouseX - 2 * polySize, mouseY);
 
-                    PointCollection polyPoints = new PointCollection();
+                    System.Windows.Media.PointCollection polyPoints = new System.Windows.Media.PointCollection();
                     polyPoints.Add(p1);
                     polyPoints.Add(p2);
                     polyPoints.Add(p3);
@@ -280,9 +296,9 @@ namespace PaintByEwa
                     }
                     else
                     {
-                        Point currentMousePosition = e.GetPosition(this);
+                        System.Windows.Point currentMousePosition = e.GetPosition(this);
                         startPoint = currentPoint;
-                        Brush color = new SolidColorBrush(currentColor);
+                        System.Windows.Media.Brush color = new SolidColorBrush(currentColor);
 
                         Line line = new Line
                         {
@@ -305,20 +321,20 @@ namespace PaintByEwa
 
                     polySize = 5;
 
-                    p1 = new Point(mouseX - polySize, mouseY - polySize);
-                    p2 = new Point(mouseX - polySize, mouseY - 5 * polySize);
-                    p3 = new Point(mouseX +  polySize, mouseY-5*polySize);
-                    p4 = new Point(mouseX + polySize, mouseY - polySize);
-                    p5 = new Point(mouseX +5* polySize, mouseY - polySize);
-                    p6 = new Point(mouseX +5* polySize, mouseY+polySize);
-                    p7 = new Point(mouseX + polySize, mouseY + polySize);
-                    p8 = new Point(mouseX + polySize, mouseY + 5 * polySize);
-                    p9 = new Point(mouseX - polySize, mouseY + 5 * polySize);
-                    p10 = new Point(mouseX - polySize, mouseY + polySize);
-                    p11 = new Point(mouseX - 5*polySize, mouseY + polySize);
-                    p12= new Point(mouseX -5*  polySize, mouseY -polySize);
+                    p1 = new System.Windows.Point(mouseX - polySize, mouseY - polySize);
+                    p2 = new System.Windows.Point(mouseX - polySize, mouseY - 5 * polySize);
+                    p3 = new System.Windows.Point(mouseX +  polySize, mouseY-5*polySize);
+                    p4 = new System.Windows.Point(mouseX + polySize, mouseY - polySize);
+                    p5 = new System.Windows.Point(mouseX +5* polySize, mouseY - polySize);
+                    p6 = new System.Windows.Point(mouseX +5* polySize, mouseY+polySize);
+                    p7 = new System.Windows.Point(mouseX + polySize, mouseY + polySize);
+                    p8 = new System.Windows.Point(mouseX + polySize, mouseY + 5 * polySize);
+                    p9 = new System.Windows.Point(mouseX - polySize, mouseY + 5 * polySize);
+                    p10 = new System.Windows.Point(mouseX - polySize, mouseY + polySize);
+                    p11 = new System.Windows.Point(mouseX - 5*polySize, mouseY + polySize);
+                    p12= new System.Windows.Point(mouseX -5*  polySize, mouseY -polySize);
 
-                    PointCollection plusPoints = new PointCollection();
+                    System.Windows.Media.PointCollection plusPoints = new System.Windows.Media.PointCollection();
                     plusPoints.Add(p1);
                     plusPoints.Add(p2);
                     plusPoints.Add(p3);
@@ -344,17 +360,17 @@ namespace PaintByEwa
 
                     polySize = 7;
 
-                    p1 = new Point(mouseX-6*polySize, mouseY +  polySize);
-                    p2 = new Point(mouseX-6*polySize, mouseY -  polySize);                  
-                    p3 = new Point(mouseX-polySize, mouseY - polySize);
-                    p4 = new Point(mouseX - 3*polySize, mouseY-2.2*polySize);
-                    p5 = new Point(mouseX-1.5*polySize, mouseY - 3.7 * polySize);
-                    p6 = new Point(mouseX + 3*polySize, mouseY);
-                    p7 = new Point(mouseX-1.5*polySize, mouseY + 3.7 * polySize);
-                    p8 = new Point(mouseX -3* polySize, mouseY+2.2*polySize);
-                    p9 = new Point(mouseX - polySize, mouseY+polySize);              
+                    p1 = new System.Windows.Point(mouseX-6*polySize, mouseY +  polySize);
+                    p2 = new System.Windows.Point(mouseX-6*polySize, mouseY -  polySize);                  
+                    p3 = new System.Windows.Point(mouseX-polySize, mouseY - polySize);
+                    p4 = new System.Windows.Point(mouseX - 3*polySize, mouseY-2.2*polySize);
+                    p5 = new System.Windows.Point(mouseX-1.5*polySize, mouseY - 3.7 * polySize);
+                    p6 = new System.Windows.Point(mouseX + 3*polySize, mouseY);
+                    p7 = new System.Windows.Point(mouseX-1.5*polySize, mouseY + 3.7 * polySize);
+                    p8 = new System.Windows.Point(mouseX -3* polySize, mouseY+2.2*polySize);
+                    p9 = new System.Windows.Point(mouseX - polySize, mouseY+polySize);
 
-                    PointCollection arrowPoints = new PointCollection();
+                    System.Windows.Media.PointCollection arrowPoints = new System.Windows.Media.PointCollection();
                     arrowPoints.Add(p1);
                     arrowPoints.Add(p2);
                     arrowPoints.Add(p3);
@@ -377,13 +393,13 @@ namespace PaintByEwa
 
                     polySize = 15;
 
-                    p1 = new Point(mouseX, mouseY - 2 * polySize);
-                    p2 = new Point(mouseX + polySize, mouseY);
-                    p3 = new Point(mouseX, mouseY+2*polySize);
-                    p4 = new Point(mouseX - polySize, mouseY);
-                    
+                    p1 = new System.Windows.Point(mouseX, mouseY - 2 * polySize);
+                    p2 = new System.Windows.Point(mouseX + polySize, mouseY);
+                    p3 = new System.Windows.Point(mouseX, mouseY+2*polySize);
+                    p4 = new System.Windows.Point(mouseX - polySize, mouseY);
 
-                    PointCollection diamondPoints = new PointCollection();
+
+                    System.Windows.Media.PointCollection diamondPoints = new System.Windows.Media.PointCollection();
                     diamondPoints.Add(p1);
                     diamondPoints.Add(p2);
                     diamondPoints.Add(p3);
@@ -402,18 +418,18 @@ namespace PaintByEwa
                     double outerRadius = 30;
                     double innerRadius = 15;
 
-                    p1 = new Point(mouseX, mouseY - outerRadius);
-                    p2 = new Point(mouseX + Math.Sin(Math.PI / 5) * innerRadius, mouseY - Math.Cos(Math.PI / 5) * innerRadius);
-                    p3 = new Point(mouseX + Math.Sin(2 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(2 * Math.PI / 5) * outerRadius);
-                    p4 = new Point(mouseX + Math.Sin(2 * Math.PI / 5) * innerRadius, mouseY + Math.Cos(2 * Math.PI / 5) * innerRadius);
-                    p5 = new Point(mouseX + Math.Sin(4 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(4 * Math.PI / 5) * outerRadius);                  
-                    p6 = new Point(mouseX, mouseY + innerRadius);
-                    p7 = new Point(mouseX - Math.Sin(4 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(4 * Math.PI / 5) * outerRadius);
-                    p8 = new Point(mouseX - Math.Sin(2 * Math.PI / 5) * innerRadius, mouseY + Math.Cos(2 * Math.PI / 5) * innerRadius);
-                    p9 = new Point(mouseX - Math.Sin(2 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(2 * Math.PI / 5) * outerRadius);
-                    p10 = new Point(mouseX - Math.Sin(Math.PI / 5) * innerRadius, mouseY - Math.Cos(Math.PI / 5) * innerRadius);
-                   
-                    PointCollection starPoints = new PointCollection();
+                    p1 = new System.Windows.Point(mouseX, mouseY - outerRadius);
+                    p2 = new System.Windows.Point(mouseX + Math.Sin(Math.PI / 5) * innerRadius, mouseY - Math.Cos(Math.PI / 5) * innerRadius);
+                    p3 = new System.Windows.Point(mouseX + Math.Sin(2 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(2 * Math.PI / 5) * outerRadius);
+                    p4 = new System.Windows.Point(mouseX + Math.Sin(2 * Math.PI / 5) * innerRadius, mouseY + Math.Cos(2 * Math.PI / 5) * innerRadius);
+                    p5 = new System.Windows.Point(mouseX + Math.Sin(4 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(4 * Math.PI / 5) * outerRadius);                  
+                    p6 = new System.Windows.Point(mouseX, mouseY + innerRadius);
+                    p7 = new System.Windows.Point(mouseX - Math.Sin(4 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(4 * Math.PI / 5) * outerRadius);
+                    p8 = new System.Windows.Point(mouseX - Math.Sin(2 * Math.PI / 5) * innerRadius, mouseY + Math.Cos(2 * Math.PI / 5) * innerRadius);
+                    p9 = new System.Windows.Point(mouseX - Math.Sin(2 * Math.PI / 5) * outerRadius, mouseY - Math.Cos(2 * Math.PI / 5) * outerRadius);
+                    p10 = new System.Windows.Point(mouseX - Math.Sin(Math.PI / 5) * innerRadius, mouseY - Math.Cos(Math.PI / 5) * innerRadius);
+
+                    System.Windows.Media.PointCollection starPoints = new System.Windows.Media.PointCollection();
                     starPoints.Add(p1);
                     starPoints.Add(p2);
                     starPoints.Add(p3);
@@ -462,6 +478,79 @@ namespace PaintByEwa
         {
             ColorPicker colorPicker = new ColorPicker(this);
             colorPicker.Show();
+        }
+
+      
+        private void readImage_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Image Files (*.jpg; *.jpeg; *.gif; *.png; *.bmp) | *.jpg; *.jpeg; *.gif; *.png;  *.bmp";
+            openFileDialog.InitialDirectory = "C:\\Users\\ewka0\\OneDrive\\Pulpit\\Studia\\Grafika komputerowa";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    imagePath = openFileDialog.FileName;
+                    Uri fileUri = new Uri(imagePath);
+                    BitmapImage bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = fileUri;
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    orgImg.Source = bitmap;
+                    imageAdded = true;
+
+                    originalImage = CvInvoke.Imread(imagePath, ImreadModes.Color);
+                    
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show("Błąd ładowania obrazu");
+                }
+                    
+            }
+        }
+
+        private void sobel_Click(object sender, RoutedEventArgs e)
+        {
+            if (imageAdded)
+            {
+                try
+                {
+                    Image<Bgr, byte> img = new Image<Bgr, byte>(imagePath);
+                    
+                    Image<Gray, byte> img2 = img.Convert<Gray, byte> ();
+                    Image<Gray, Single> img_final = (img2.Sobel(1,1,5));                  
+
+                    CvInvoke.Imshow("Filtr Sobel", img_final);
+                    CvInvoke.WaitKey(0);
+
+                    
+                    //Bitmap bitmap = img_final.ToBitmap();
+                    //MemoryStream memoryStream = new MemoryStream();
+
+                    //bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
+                    //memoryStream.Position = 0; 
+                
+                    //BitmapImage bitmapImage = new BitmapImage();
+                    //bitmapImage.BeginInit();
+                    //bitmapImage.StreamSource = memoryStream;
+                    //bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    //bitmapImage.EndInit();
+                    //bitmapImage.Freeze();
+                    //orgImg.Source = bitmapImage;        
+               }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Błąd podczas przetwarzania obrazu: {ex.Message}");
+                }
+
+            }
+            else
+            {
+                MessageBox.Show("Nie dodano obrazu");
+            }
         }
     }
 }
