@@ -40,6 +40,7 @@
                     <MenuItem Header="Obraz" Background="#FF40E093" BorderBrush="#FF40E093">
                         <MenuItem x:Name="readImage"  Header="Wczytaj" Background="#FF40E093" Click="readImage_Click"></MenuItem>
                         <MenuItem x:Name="sobel"  Header="Filtr Sobel" Background="#FF40E093" Click="sobel_Click"></MenuItem>
+                        <MenuItem x:Name="filter"  Header="Macierz filtracji" Background="#FF40E093" Click="filter_Click"></MenuItem>
                     </MenuItem>
                 </Menu>
             </ToolBar>

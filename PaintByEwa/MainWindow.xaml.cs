@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +20,7 @@ using System.Windows.Threading;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Features2D;
+using Emgu.CV.Ocl;
 using Emgu.CV.Reg;
 using Emgu.CV.Structure;
 using Microsoft.Win32;
@@ -39,15 +41,14 @@ namespace PaintByEwa
         Line selected;
         System.Windows.Shapes.Ellipse start;
         System.Windows.Shapes.Ellipse end;
-        string imagePath;
+        public string imagePath;
         
-
         int valueRed;
         int valueGreen;
         int valueBlue;
         System.Windows.Media.Color currentColor = System.Windows.Media.Color.FromRgb(0, 0, 0);
 
-        bool imageAdded = false;      
+        bool imageAdded = false;     
 
         public MainWindow()
         {
@@ -493,7 +494,7 @@ namespace PaintByEwa
                     Uri fileUri = new Uri(imagePath);
                     BitmapImage bitmap = new BitmapImage(fileUri);                  
                     orgImg.Source = bitmap;
-                    imageAdded = true;                                    
+                    imageAdded = true;                  
                 }
                 catch (Exception)
                 {
@@ -516,14 +517,13 @@ namespace PaintByEwa
 
                     CvInvoke.Imshow("Filtr Sobel", img_final);
                     CvInvoke.WaitKey(0);
-
-                    
+                 
                     //Bitmap bitmap = img_final.ToBitmap();
                     //MemoryStream memoryStream = new MemoryStream();
 
                     //bitmap.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
                     //memoryStream.Position = 0; 
-                
+
                     //BitmapImage bitmapImage = new BitmapImage();
                     //bitmapImage.BeginInit();
                     //bitmapImage.StreamSource = memoryStream;
@@ -531,7 +531,7 @@ namespace PaintByEwa
                     //bitmapImage.EndInit();
                     //bitmapImage.Freeze();
                     //orgImg.Source = bitmapImage;        
-               }
+                }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Błąd podczas przetwarzania obrazu: {ex.Message}");
@@ -542,6 +542,21 @@ namespace PaintByEwa
             {
                 MessageBox.Show("Nie dodano obrazu");
             }
+        }
+
+        private void filter_Click(object sender, RoutedEventArgs e)
+        {
+            if (imageAdded)
+            {
+                ImageWindow imageWindow = new ImageWindow(this);
+                imageWindow.Show();
+            }
+            else
+            {
+                MessageBox.Show("Nie dodano obrazu");             
+            }
+
+            
         }
     }
 }
