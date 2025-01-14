@@ -558,5 +558,109 @@ namespace PaintByEwa
 
             
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void delete_Click(object sender, RoutedEventArgs e)
+        {
+            if (imageAdded)
+            {
+                orgImg.Source = null;
+                imageAdded = false;
+            }
+            else
+            {
+                MessageBox.Show("Nie dodano obrazu");
+            }
+        }
+
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Image File (*.png)|*.png";
+            saveFileDialog.FilterIndex = 1;
+            if(saveFileDialog.ShowDialog() == true)
+            {
+                Uri newFileUri = new Uri(saveFileDialog.FileName);
+                saveToPngFile(newFileUri, paintSurface);
+            }
+        }
+
+        private void btnSaveJpg_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Image File (*.jpg)|*.jpg";
+            saveFileDialog.FilterIndex = 1;
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                Uri newFileUri = new Uri(saveFileDialog.FileName);
+                saveToJpgFile(newFileUri, paintSurface);
+            }
+        }
+
+        private void saveToJpgFile(Uri path, Canvas surface)
+        {
+            if (path == null)
+            {
+                return;
+            }
+
+            Transform transform = surface.LayoutTransform;
+            surface.LayoutTransform = null;
+
+            System.Windows.Size size = new System.Windows.Size(surface.ActualWidth, surface.ActualWidth);
+
+            surface.Measure(size);
+            surface.Arrange(new Rect(size));
+
+            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96d, 96d, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(surface);
+
+            FormatConvertedBitmap jpgCompatibleBitmap = new FormatConvertedBitmap(renderTargetBitmap, PixelFormats.Bgr24, null, 0);
+
+
+            using (FileStream outStream = new FileStream(path.LocalPath, FileMode.Create))
+            {
+                JpegBitmapEncoder encoder = new JpegBitmapEncoder();
+               
+                encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+                encoder.Save(outStream);
+            }
+
+            surface.LayoutTransform = transform;
+        }
+
+        private void saveToPngFile(Uri path, Canvas surface)
+        {
+            if (path == null)
+            {
+                return;
+            }
+
+            Transform transform = surface.LayoutTransform;
+            surface.LayoutTransform = null;
+
+            System.Windows.Size size = new System.Windows.Size(surface.ActualWidth, surface.ActualWidth);
+
+            surface.Measure(size);
+            surface.Arrange(new Rect(size));
+
+            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96d, 96d, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(surface);
+
+            using(FileStream outStream = new FileStream(path.LocalPath, FileMode.Create))
+            {
+                PngBitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+                encoder.Save(outStream);
+            }
+
+            surface.LayoutTransform = transform;
+        }
+
+        
     }
 }
