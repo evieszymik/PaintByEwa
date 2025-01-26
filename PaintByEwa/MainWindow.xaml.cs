@@ -139,7 +139,6 @@ namespace PaintByEwa
         private void drawStar_Click(object sender, RoutedEventArgs e)
         {
             drawStyle = 13;
-            Console.WriteLine(new SolidColorBrush(currentColor));
         }
 
         private void paintSurface_MouseMove(object sender, MouseEventArgs e)
@@ -149,6 +148,7 @@ namespace PaintByEwa
                 Line line = new Line();
                 
                 line.Stroke = new SolidColorBrush(currentColor);
+                line.StrokeThickness = 2;
                 
                 line.X1 = currentPoint.Value.X;
                 line.Y1 = currentPoint.Value.Y;
@@ -455,6 +455,16 @@ namespace PaintByEwa
                     selected.X2 = e.GetPosition(this).X;
                     selected.Y2 = e.GetPosition(this).Y;
                     break;
+                case 16:
+                    var clickedElement = e.Source as FrameworkElement;
+                    if(clickedElement != null)
+                    {
+                       if(paintSurface.Children.Contains(clickedElement))
+                        {
+                            paintSurface.Children.Remove(clickedElement);
+                        }
+                    }
+                    break;
             }                                             
         }
 
@@ -559,11 +569,6 @@ namespace PaintByEwa
             
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void delete_Click(object sender, RoutedEventArgs e)
         {
             if (imageAdded)
@@ -643,6 +648,8 @@ namespace PaintByEwa
             Transform transform = surface.LayoutTransform;
             surface.LayoutTransform = null;
 
+            surface.Background = System.Windows.Media.Brushes.Transparent;
+
             System.Windows.Size size = new System.Windows.Size(surface.ActualWidth, surface.ActualWidth);
 
             surface.Measure(size);
@@ -659,8 +666,12 @@ namespace PaintByEwa
             }
 
             surface.LayoutTransform = transform;
+            surface.Background = System.Windows.Media.Brushes.LightBlue;
         }
 
-        
+        private void eraser_Click(object sender, RoutedEventArgs e)
+        {
+            drawStyle = 16;
+        }
     }
 }

@@ -12,7 +12,7 @@
         </Canvas>
 
         <ToolBarPanel Margin="-5,-1,-5,0">
-            <ToolBar VerticalAlignment="Top" Background="#FF40E093" BorderBrush="#FF0C2380" BorderThickness="2" Margin="-2,0,0,0">
+            <ToolBar  VerticalAlignment="Top" Background="#FF40E093" BorderBrush="#FF0C2380" BorderThickness="2" Margin="-2,0,0,0">
                 <Menu>
                     <MenuItem Header="Plik"  Background="#FF40E093" BorderBrush="#FF40E093">
                         <MenuItem x:Name="btnSavePng" Header="Zapisz jako plik PNG" Click="btnSave_Click"  Background="#FF40E093"></MenuItem>
@@ -43,13 +43,14 @@
                 <Rectangle x:Name="buttonColorPicker" Width="20" Height="20" Stroke="Black" Fill="Black" Margin="6,0,0,0"  MouseLeftButtonDown="buttonColorPicker_MouseLeftButtonDown" />
                 
                 <Menu Margin="5,0,0,0">
-                    <MenuItem Header="Obraz" Background="#FF40E093" BorderBrush="#FF40E093" Click="MenuItem_Click">
+                    <MenuItem Header="Obraz" Background="#FF40E093" BorderBrush="#FF40E093">
                         <MenuItem x:Name="readImage"  Header="Wczytaj" Background="#FF40E093" Click="readImage_Click"></MenuItem>
                         <MenuItem x:Name="sobel"  Header="Filtr Sobel" Background="#FF40E093" Click="sobel_Click"></MenuItem>
                         <MenuItem x:Name="filter"  Header="Macierz filtracji" Background="#FF40E093" Click="filter_Click"></MenuItem>
                         <MenuItem x:Name="delete"  Header="Usuń obraz" Background="#FF40E093" Click="delete_Click" ></MenuItem>
                     </MenuItem>
                 </Menu>
+                <Button x:Name="eraser" Click="eraser_Click">Gumka</Button>
             </ToolBar>
         </ToolBarPanel>
 
